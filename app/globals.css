@@ -1,0 +1,149 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+
+  --color-paper: #ffffff;
+  --color-subtle: #fafafa;
+  --color-ink: #171717;
+  --color-ink-2: #525252;
+  --color-ink-3: #737373;
+  --color-line: #e5e5e5;
+  --color-line-2: #f2f2f2;
+
+  --color-accent: #f0360a;
+  --color-accent-strong: #d42d06;
+  --color-accent-soft: #fff3ee;
+
+  --color-ok: #15803d;
+  --color-ok-soft: #effaf2;
+  --color-bad: #c81e1e;
+  --color-bad-soft: #fdf1f1;
+  --color-wip: #a16207;
+  --color-wip-soft: #fdf8e8;
+
+  --color-recepcion: #3b82f6;
+  --color-alimentos: #f59e0b;
+  --color-pisos: #14b8a6;
+  --color-lavanderia: #8b5cf6;
+
+  --shadow-soft: 0 0 1px rgb(0 0 0 / 0.03), 0 1px 2px rgb(0 0 0 / 0.06);
+  --shadow-float: 0 0 1px rgb(0 0 0 / 0.04), 0 2px 4px rgb(0 0 0 / 0.04), 0 12px 32px -8px rgb(0 0 0 / 0.1);
+}
+
+.area-recepcion { --area: var(--color-recepcion); }
+.area-alimentos { --area: var(--color-alimentos); }
+.area-pisos { --area: var(--color-pisos); }
+.area-lavanderia { --area: var(--color-lavanderia); }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  color-scheme: light;
+  scrollbar-color: #d4d4d4 transparent;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: #f0360a26;
+  color: var(--color-ink);
+}
+
+input,
+textarea,
+select {
+  caret-color: var(--color-accent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+a {
+  text-underline-offset: 3px;
+}
+
+/* ───── Marco de líneas finas con marcas de acento en las esquinas ───── */
+.frame {
+  position: relative;
+  border: 1px solid var(--color-line);
+  background: var(--color-paper);
+}
+.frame::before,
+.frame::after {
+  content: '';
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  background: var(--color-accent);
+  z-index: 1;
+}
+.frame::before { top: -3px; left: -3px; }
+.frame::after { bottom: -3px; right: -3px; }
+
+/* Cuadrícula tenue que se desvanece, para fondos de cabecera */
+.grid-fade {
+  background-image:
+    linear-gradient(to right, #ededed 1px, transparent 1px),
+    linear-gradient(to bottom, #ededed 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse 80% 70% at 70% 0%, #000 30%, transparent 75%);
+}
+
+/* Tira de 12 meses */
+.month-cell[data-s='aprobado'] { --tone: var(--color-ok); }
+.month-cell[data-s='reprobado'] { --tone: var(--color-bad); }
+.month-cell[data-s='en-curso'] { --tone: var(--color-wip); }
+.month-cell[data-s='pendiente'] { --tone: var(--color-accent); }
+.month-cell[data-s='sin-dato'] { --tone: #d4d4d4; }
+
+.live-dot {
+  position: relative;
+}
+.live-dot::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 999px;
+  border: 1.5px solid var(--color-accent);
+  animation: live 1.8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+@keyframes live {
+  from { opacity: 0.8; transform: scale(0.8); }
+  to { opacity: 0; transform: scale(1.8); }
+}
+
+.rise {
+  animation: rise 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes rise {
+  from { opacity: 0.4; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+.score-in {
+  animation: score-in 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes score-in {
+  from { opacity: 0.3; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-dot::after,
+  .rise,
+  .score-in {
+    animation: none !important;
+  }
+}
