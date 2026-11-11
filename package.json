@@ -6,7 +6,9 @@
     "dev": "next dev -p 3100",
     "build": "next build",
     "start": "next start",
-    "demo": "tsx scripts/demo.ts"
+    "demo": "tsx scripts/demo.ts",
+    "test": "tsx --test tests/logica.test.mts",
+    "test:servidor": "tsx --test tests/servidor.test.mts"
   },
   "dependencies": {
     "lucide-react": "^0.553.0",
