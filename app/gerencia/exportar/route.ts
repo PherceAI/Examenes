@@ -7,7 +7,7 @@ import {statusLabel} from '@/components/ui';
 import {monthRows} from '@/lib/stats';
 
 export async function GET(req: NextRequest) {
-  if (!(await isManager())) return NextResponse.redirect(new URL('/gerencia/ingreso', req.url));
+  if (!(await isManager())) return new NextResponse(null, {status: 307, headers: {Location: '/gerencia/ingreso'}});
   const db = await readDb();
   const qMes = req.nextUrl.searchParams.get('mes') || '';
   const mes = /^\d{4}-\d{2}$/.test(qMes) ? qMes : examWindow(db.ajustes).mes;

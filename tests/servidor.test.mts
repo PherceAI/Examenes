@@ -91,6 +91,8 @@ describe('Servidor de producción', () => {
     const r = await get('/gerencia/exportar?mes=2026-11');
     assert.ok([303, 307, 308].includes(r.status), `respondió ${r.status}`);
     assert.match(r.headers.get('location') || '', /gerencia\/ingreso/);
+    // Detrás del proxy de Coolify no debe filtrarse la dirección interna del contenedor.
+    assert.doesNotMatch(r.headers.get('location') || '', /0\.0\.0\.0|localhost|127\.0\.0\.1/);
   });
 
   test('los estilos y la letra se sirven', async () => {
