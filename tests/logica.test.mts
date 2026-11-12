@@ -13,6 +13,8 @@ const {AUTOEVAL_INICIAL, MAX_PREGUNTAS_POR_TEMA, PREGUNTAS_INICIALES, TEMAS_INIC
 const {readDb, updateDb} = await import('../lib/db');
 const exam = await import('../lib/exam');
 const {checkPin, hashPin} = await import('../lib/auth');
+const game = await import('../lib/game');
+const {monthInsights} = await import('../lib/insights');
 type Employee = import('../lib/types').Employee;
 type Attempt = import('../lib/types').Attempt;
 
@@ -144,6 +146,69 @@ describe('Calificación', () => {
     assert.equal(exam.statusFor({} as Attempt, s, true), 'en-curso');
     assert.equal(exam.statusFor(undefined, s, true), 'pendiente');
     assert.equal(exam.statusFor(undefined, s, false), 'sin-dato');
+  });
+});
+
+describe('Juego: puntos, rachas y estrellas', () => {
+  const base = async (): Promise<Attempt> => {
+    const db = await readDb();
+    const preguntas = exam.freezeQuestions(db, emp('Mesero'));
+    return {id: 'a', empleadoId: 'e', mes: '2026-11', iniciado: '', actualizado: '', preguntas, autoevalPreguntas: [], respuestas: {}, autoeval: {}, contradicciones: {}};
+  };
+  const wrong = (q: {correcta: number; opciones: string[]}) => (q.correcta + 1) % q.opciones.length;
+
+  test('todo correcto: 10 por acierto y bono desde el tercero seguido', async () => {
+    const a = await base();
+    for (const q of a.preguntas) a.respuestas[q.id] = q.correcta;
+    const g = game.gameStats(a);
+    assert.equal(g.aciertos, 30);
+    assert.equal(g.mejorRacha, 30);
+    assert.equal(g.puntos, 30 * 10 + 28 * 5);
+  });
+
+  test('un error corta la racha', async () => {
+    const a = await base();
+    a.preguntas.slice(0, 10).forEach((q, i) => (a.respuestas[q.id] = i === 4 ? wrong(q) : q.correcta));
+    const g = game.gameStats(a);
+    assert.equal(g.respondidas, 10);
+    assert.equal(g.aciertos, 9);
+    assert.equal(g.mejorRacha, 5); // 4 antes del error, 5 después
+    assert.equal(g.rachaActual, 5);
+    assert.equal(g.puntos, (10 + 10 + 15 + 15) + (10 + 10 + 15 + 15 + 15));
+  });
+
+  test('estrellas por tema', () => {
+    assert.equal(game.stars(6, 6), 3);
+    assert.equal(game.stars(5, 6), 2);
+    assert.equal(game.stars(3, 6), 1);
+    assert.equal(game.stars(2, 6), 0);
+    assert.equal(game.stars(0, 0), 0);
+  });
+
+  test('racha mensual cuenta meses seguidos enviados', async () => {
+    const db = await readDb();
+    const mk = (mes: string, enviado = true) => ({id: mes, empleadoId: 'r', mes, iniciado: '', actualizado: '', enviado: enviado ? 'x' : undefined, preguntas: [], autoevalPreguntas: [], respuestas: {}, autoeval: {}, contradicciones: {}});
+    const d = {...db, intentos: [mk('2026-08'), mk('2026-09'), mk('2026-10'), mk('2026-11', false)]};
+    assert.equal(game.monthlyStreak(d, 'r', '2026-11'), 3); // noviembre aún sin enviar: cuenta desde octubre
+    d.intentos[3] = mk('2026-11');
+    assert.equal(game.monthlyStreak(d, 'r', '2026-11'), 4);
+    d.intentos.splice(1, 1); // falta septiembre
+    assert.equal(game.monthlyStreak(d, 'r', '2026-11'), 2);
+  });
+
+  test('el resumen explica el mes en frases', async () => {
+    const db = await readDb();
+    const vacio = monthInsights({...db, empleados: []}, '2026-11');
+    assert.match(vacio[0].text, /no hay empleados/);
+    const e1 = {...emp('Mesero'), id: 'x1', nombre: 'Ana Pérez'};
+    const a = await base();
+    a.empleadoId = 'x1';
+    for (const q of a.preguntas) a.respuestas[q.id] = q.correcta;
+    a.enviado = '2026-11-27T10:00:00.000Z';
+    Object.assign(a, exam.grade(a));
+    const out = monthInsights({...db, empleados: [e1], intentos: [a]}, '2026-11');
+    assert.ok(out.some((i) => /único empleado ya envió/.test(i.text)), out.map((i) => i.text).join(' | '));
+    assert.ok(out.some((i) => /promedio del equipo es 100/.test(i.text)));
   });
 });
 

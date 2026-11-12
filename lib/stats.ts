@@ -1,4 +1,4 @@
-import {attemptOf, examWindow, statusFor, type MonthStatus} from './exam';
+import {attemptOf, examWindow, shiftMonth, statusFor, type MonthStatus} from './exam';
 import type {Attempt, Database, Employee} from './types';
 
 export interface Row {
@@ -71,4 +71,44 @@ export function availableMonths(db: Database): string[] {
   const set = new Set(db.intentos.map((i) => i.mes));
   set.add(examWindow(db.ajustes).mes);
   return [...set].sort().reverse();
+}
+
+export interface TrendPoint {
+  mes: string;
+  promedio: number | null;
+  rindieron: number;
+  total: number;
+}
+
+/** Promedio y participación de los últimos `n` meses, terminando en `end`. */
+export function monthTrend(db: Database, end: string, n = 6): TrendPoint[] {
+  const out: TrendPoint[] = [];
+  for (let i = n - 1; i >= 0; i--) {
+    const mes = shiftMonth(end, -i);
+    const rows = monthRows(db, mes);
+    const sent = rows.filter((r) => r.attempt?.enviado);
+    out.push({
+      mes,
+      promedio: sent.length ? Math.round(sent.reduce((s, r) => s + (r.attempt?.nota || 0), 0) / sent.length) : null,
+      rindieron: sent.length,
+      total: rows.length,
+    });
+  }
+  return out;
+}
+
+/** Notas enviadas agrupadas en tramos para el histograma. */
+export const BUCKETS = [
+  {desde: 0, hasta: 39, label: '0–39'},
+  {desde: 40, hasta: 59, label: '40–59'},
+  {desde: 60, hasta: 69, label: '60–69'},
+  {desde: 70, hasta: 79, label: '70–79'},
+  {desde: 80, hasta: 89, label: '80–89'},
+  {desde: 90, hasta: 100, label: '90–100'},
+];
+export function gradeBuckets(rows: Row[]) {
+  return BUCKETS.map((b) => ({
+    ...b,
+    nombres: rows.filter((r) => r.attempt?.enviado && (r.attempt.nota ?? -1) >= b.desde && (r.attempt.nota ?? -1) <= b.hasta).map((r) => r.emp.nombre),
+  }));
 }

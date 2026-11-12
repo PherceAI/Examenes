@@ -1,5 +1,5 @@
 import {redirect} from 'next/navigation';
-import {ExamRunner, type RunnerStep} from '@/components/exam-runner';
+import {ExamGame, type GameStep} from '@/components/exam-game';
 import {requireEmployee} from '@/lib/auth';
 import {readDb} from '@/lib/db';
 import {attemptOf, examWindow, monthName} from '@/lib/exam';
@@ -15,21 +15,28 @@ export default async function ExamenPage() {
   if (a.enviado) redirect('/empleado/resultado');
   if (!w.open) redirect('/empleado');
 
-  // Al cliente nunca se le envía cuál es la respuesta correcta.
-  const steps: RunnerStep[] = [
-    ...a.preguntas.map((q) => ({
-      kind: 'pregunta' as const,
-      id: q.id,
-      seccion: q.topicNombre,
-      texto: q.texto,
-      opciones: q.opciones,
-    })),
+  // Al cliente solo se le manda la respuesta correcta de las preguntas ya comprobadas (bloqueadas).
+  const steps: GameStep[] = [
+    ...a.preguntas.map((q) => {
+      const elegida = a.respuestas[q.id];
+      return {
+        kind: 'pregunta' as const,
+        id: q.id,
+        seccion: q.topicNombre,
+        tipo: q.tipo,
+        texto: q.texto,
+        opciones: q.opciones,
+        hecho: elegida === undefined ? undefined : {elegida, correcta: q.correcta},
+      };
+    }),
     ...a.autoevalPreguntas.map((q) => ({
       kind: 'autoeval' as const,
       id: q.id,
-      seccion: 'Autoevaluación',
+      seccion: 'Sobre ti',
+      tipo: 'sino' as const,
       texto: q.texto,
       opciones: ['Sí', 'No'],
+      hecho: a.autoeval[q.id] === undefined ? undefined : {elegida: a.autoeval[q.id] ? 0 : 1},
     })),
   ];
 
@@ -38,17 +45,12 @@ export default async function ExamenPage() {
     .map((e) => ({id: e.id, nombre: e.nombre, puesto: e.puesto}))
     .sort((x, y) => x.nombre.localeCompare(y.nombre));
 
-  const initial: Record<string, number> = {};
-  for (const [k, v] of Object.entries(a.respuestas)) initial[`pregunta:${k}`] = v;
-  for (const [k, v] of Object.entries(a.autoeval)) initial[`autoeval:${k}`] = v ? 0 : 1;
-
   return (
-    <ExamRunner
+    <ExamGame
       mes={monthName(a.mes)}
       area={emp.area}
       steps={steps}
       companeros={companeros}
-      initialAnswers={initial}
       initialVote={a.votoAmable}
     />
   );

@@ -96,19 +96,26 @@ export async function iniciarExamen() {
 
 export type AnswerKind = 'pregunta' | 'autoeval' | 'voto';
 
-/** Guarda cada respuesta apenas se toca, para no perder nada si se cae la señal. */
-export async function guardarRespuesta(kind: AnswerKind, key: string, value: number | boolean | string | null) {
+export type AnswerResult = {error?: string; ok?: boolean; correcta?: number; elegida?: number};
+
+/** Guarda cada respuesta apenas se comprueba, para no perder nada si se cae la señal.
+ *  Una pregunta con nota queda bloqueada al comprobarla: recién entonces se revela la correcta. */
+export async function guardarRespuesta(kind: AnswerKind, key: string, value: number | boolean | string | null): Promise<AnswerResult> {
   const emp = await currentEmployee();
   if (!emp) return {error: 'Tu sesión venció. Vuelve a ingresar.'};
-  return updateDb((db) => {
+  return updateDb((db): AnswerResult => {
     const w = examWindow(db.ajustes);
     const a = attemptOf(db, emp.id, w.mes);
     if (!a || a.enviado) return {error: 'Este examen ya no se puede modificar.'};
     if (!w.open) return {error: 'El examen está cerrado.'};
     if (kind === 'pregunta') {
       const q = a.preguntas.find((p) => p.id === key);
-      if (!q || typeof value !== 'number' || value < 0 || value >= q.opciones.length) return {error: 'Respuesta no válida.'};
+      if (!q || typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value >= q.opciones.length) return {error: 'Respuesta no válida.'};
+      // Ya comprobada: no se cambia; se devuelve lo que quedó guardado.
+      if (a.respuestas[key] !== undefined) return {ok: true, correcta: q.correcta, elegida: a.respuestas[key]};
       a.respuestas[key] = value;
+      a.actualizado = new Date().toISOString();
+      return {ok: true, correcta: q.correcta, elegida: value};
     } else if (kind === 'autoeval') {
       if (!a.autoevalPreguntas.some((p) => p.id === key) || typeof value !== 'boolean') return {error: 'Respuesta no válida.'};
       a.autoeval[key] = value;
@@ -142,7 +149,8 @@ export async function enviarExamen(): Promise<{error?: string}> {
   });
   if (res.error) return res;
   revalidatePath('/empleado');
-  redirect('/empleado/resultado');
+  revalidatePath('/gerencia', 'layout');
+  redirect('/empleado/resultado?fin=1');
 }
 
 // ───────────── Gerencia: empleados ─────────────

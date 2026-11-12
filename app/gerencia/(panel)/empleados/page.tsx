@@ -28,7 +28,7 @@ export default async function Empleados({searchParams}: {searchParams: Promise<{
           </Link>
         }
       />
-      <div className="px-5 py-8 lg:px-8">
+      <div className="px-4 py-6 sm:px-5 lg:px-8 lg:py-8">
         <form className="flex flex-wrap gap-2">
           <label className="relative w-full max-w-sm">
             <span className="sr-only">Buscar</span>
@@ -46,57 +46,37 @@ export default async function Empleados({searchParams}: {searchParams: Promise<{
           <button className={`${btn.secondary} h-10 text-[14px]`}>Filtrar</button>
         </form>
 
-        <div className="frame mt-5"><div className="relative overflow-x-auto">
-          <table className="w-full min-w-[820px] text-left text-[14px]">
-            <thead>
-              <tr className="border-b border-line text-[13px] text-ink-3">
-                <th className="px-5 py-3 font-normal">Empleado</th>
-                <th className="px-3 py-3 font-normal">Cédula</th>
-                <th className="px-3 py-3 font-normal">Área</th>
-                <th className="px-3 py-3 font-normal">Este mes</th>
-                <th className="px-5 py-3 font-normal">Últimos 12 meses</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {list.map((e) => {
-                const a = attemptOf(db, e.id, w.mes);
-                return (
-                  <tr key={e.id} className={`transition-colors hover:bg-subtle ${e.activo ? '' : 'opacity-55'}`}>
-                    <td className="px-5 py-3">
-                      <Link href={`/gerencia/empleados/${e.id}`} className="flex items-center gap-3">
-                        <Avatar nombre={e.nombre} area={e.area} />
-                        <span>
-                          <span className="block text-ink hover:underline">{e.nombre}</span>
-                          <span className="block text-[13px] text-ink-3">
-                            {e.puesto}
-                            {!e.activo && ' · Pausado'}
-                          </span>
-                        </span>
-                      </Link>
-                    </td>
-                    <td className="num px-3 py-3 font-mono text-[13px] text-ink-2">{formatCedula(e.cedula)}</td>
-                    <td className="px-3 py-3 text-ink-2">
-                      <AreaDot area={e.area} /> <span className="ml-1">{areaById(e.area).nombre}</span>
-                    </td>
-                    <td className="px-3 py-3">
-                      <StatusPill status={statusFor(a, db.ajustes, true)} nota={a?.enviado ? a.nota : undefined} />
-                    </td>
-                    <td className="px-5 py-3">
-                      <MonthStrip months={punchMonths(db, e)} compact />
-                    </td>
-                  </tr>
-                );
-              })}
-              {list.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-5 py-12 text-center text-ink-3">
-                    {db.empleados.length === 0 ? 'Todavía no hay empleados cargados.' : 'Nadie coincide con la búsqueda.'}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table></div>
-        </div>
+        <ul className="frame mt-5 divide-y divide-line">
+          {list.map((e) => {
+            const a = attemptOf(db, e.id, w.mes);
+            return (
+              <li key={e.id} className={e.activo ? '' : 'opacity-55'}>
+                <Link href={`/gerencia/empleados/${e.id}`} className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-subtle sm:px-5">
+                  <Avatar nombre={e.nombre} area={e.area} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[15px] text-ink">{e.nombre}</span>
+                    <span className="block truncate text-[13px] text-ink-3">
+                      {e.puesto} · <span className="num font-mono text-[12.5px]">{formatCedula(e.cedula)}</span>
+                      {!e.activo && ' · Pausado'}
+                    </span>
+                  </span>
+                  <span className="hidden items-center gap-2 text-[13.5px] text-ink-2 lg:flex">
+                    <AreaDot area={e.area} /> {areaById(e.area).nombre}
+                  </span>
+                  <span className="hidden md:block">
+                    <MonthStrip months={punchMonths(db, e)} compact />
+                  </span>
+                  <StatusPill status={statusFor(a, db.ajustes, true)} nota={a?.enviado ? a.nota : undefined} />
+                </Link>
+              </li>
+            );
+          })}
+          {list.length === 0 && (
+            <li className="px-5 py-12 text-center text-[14px] text-ink-3">
+              {db.empleados.length === 0 ? 'Todavía no hay empleados cargados.' : 'Nadie coincide con la búsqueda.'}
+            </li>
+          )}
+        </ul>
       </div>
     </>
   );
