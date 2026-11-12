@@ -19,10 +19,9 @@ export const field =
 export function Wordmark({sub, className = ''}: {sub?: string; className?: string}) {
   return (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
-      <svg viewBox="0 0 24 24" className="h-6 w-6 shrink-0" aria-hidden>
-        <path d="M13.6 2 4.5 13.4h6.1L9.4 22l9.1-11.6h-6.1z" fill="var(--color-accent)" />
-      </svg>
-      <span className="text-[17px] font-medium tracking-[-0.03em] text-accent">Hotel Zeus</span>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/logo-zeus.png" alt="" width={21} height={32} className="h-8 w-auto shrink-0" />
+      <span className="text-[17px] font-medium tracking-[-0.03em] text-ink">Hotel Zeus</span>
       {sub && <span className="hidden border-l border-line pl-2.5 text-[14px] text-ink-3 sm:inline">{sub}</span>}
     </span>
   );
